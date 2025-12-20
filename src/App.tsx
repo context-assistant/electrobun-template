@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { APITester } from "./APITester";
 import "./index.css";
 
-import logo from "./logo.svg";
+import logo from "./design/logo.svg";
 import reactLogo from "./react.svg";
 
 export function App() {
@@ -13,11 +13,6 @@ export function App() {
           src={logo}
           alt="Bun Logo"
           className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#646cffaa] scale-120"
-        />
-        <img
-          src={reactLogo}
-          alt="React Logo"
-          className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#61dafbaa] [animation:spin_20s_linear_infinite]"
         />
       </div>
       <Card>
