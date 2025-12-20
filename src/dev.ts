@@ -17,4 +17,3 @@ const server = serve({
 });
 
 console.log(`🚀 Dev server running at ${server.url}`);
-
