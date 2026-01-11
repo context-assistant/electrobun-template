@@ -21,7 +21,9 @@ afterEach(() => {
 describe("SettingsModal", () => {
   test("does not render when closed", () => {
     render(<SettingsModal open={false} onClose={() => {}} />);
-    expect(within(document.body).queryByRole("dialog", { name: "Settings" })).toBeNull();
+    expect(
+      within(document.body).queryByRole("dialog", { name: "Settings" }),
+    ).toBeNull();
   });
 
   test("renders when open and closes via button click and Escape key", async () => {
@@ -34,7 +36,9 @@ describe("SettingsModal", () => {
     render(<SettingsModal open onClose={onClose} />);
 
     // Portal should still be queryable from the document.
-    expect(within(document.body).getByRole("dialog", { name: "Settings" })).toBeTruthy();
+    expect(
+      within(document.body).getByRole("dialog", { name: "Settings" }),
+    ).toBeTruthy();
     expect(within(document.body).getByText("Settings")).toBeTruthy();
 
     await user.click(
@@ -63,5 +67,3 @@ describe("SettingsModal", () => {
     expect(document.documentElement.classList.contains("dark")).toBe(false);
   });
 });
-
-

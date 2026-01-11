@@ -3,11 +3,20 @@ import { createPortal } from "react-dom";
 import { Moon, Sun, SunMoon, X } from "lucide-react";
 import { IconButton } from "./IconButton";
 import {
+  isElectrobun,
+  onUpdateInfoChanged,
+  updaterApplyUpdate,
+  updaterCheckForUpdate,
+  updaterDownloadUpdate,
+  updaterGetUpdateInfo,
+} from "../electrobun/renderer";
+import {
   applyTheme,
   getStoredTheme,
   setStoredTheme,
   type ThemeMode,
 } from "../lib/theme";
+import type { UpdateInfo } from "../electrobun/rpcSchema";
 
 type Props = {
   open: boolean;
@@ -19,6 +28,8 @@ type SettingsGroup = "general";
 export function SettingsModal({ open, onClose }: Props) {
   const [group, setGroup] = useState<SettingsGroup>("general");
   const [theme, setTheme] = useState<ThemeMode>(() => getStoredTheme());
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [updateBusy, setUpdateBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -34,12 +45,26 @@ export function SettingsModal({ open, onClose }: Props) {
     return applyTheme(theme);
   }, [theme]);
 
+  useEffect(() => {
+    if (!open) return;
+    if (!isElectrobun()) return;
+
+    const unsub = onUpdateInfoChanged((info) => setUpdateInfo(info));
+    updaterGetUpdateInfo()
+      .then((info) => setUpdateInfo(info))
+      .catch(() => {
+        // ignore
+      });
+
+    return unsub;
+  }, [open]);
+
   const body = useMemo(() => {
     if (!open) return null;
 
     return (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center lightbox-container p-4"
         role="dialog"
         aria-modal="true"
         aria-label="Settings"
@@ -108,6 +133,90 @@ export function SettingsModal({ open, onClose }: Props) {
                       />
                     </div>
                   </div>
+
+                  {isElectrobun() && (
+                    <div className="rounded-lg border p-4 mt-4">
+                      <div className="text-sm font-medium mb-2">Updates</div>
+                      <div className="text-sm text-muted-foreground mb-4">
+                        Check for updates and apply them (Electrobun Updater).
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="rounded-md border px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
+                          disabled={updateBusy}
+                          onClick={async () => {
+                            setUpdateBusy(true);
+                            try {
+                              await updaterCheckForUpdate();
+                            } finally {
+                              setUpdateBusy(false);
+                            }
+                          }}
+                        >
+                          Check for update
+                        </button>
+
+                        <button
+                          type="button"
+                          className="rounded-md border px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
+                          disabled={updateBusy || !updateInfo?.updateAvailable}
+                          onClick={async () => {
+                            setUpdateBusy(true);
+                            try {
+                              await updaterDownloadUpdate();
+                            } finally {
+                              setUpdateBusy(false);
+                            }
+                          }}
+                        >
+                          Download
+                        </button>
+
+                        <button
+                          type="button"
+                          className="rounded-md border px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
+                          disabled={updateBusy || !updateInfo?.updateReady}
+                          onClick={async () => {
+                            setUpdateBusy(true);
+                            try {
+                              await updaterApplyUpdate();
+                            } finally {
+                              setUpdateBusy(false);
+                            }
+                          }}
+                        >
+                          Restart & apply
+                        </button>
+                      </div>
+
+                      <div className="mt-3 text-xs text-muted-foreground">
+                        <div>
+                          <span className="font-medium text-foreground">
+                            Status:
+                          </span>{" "}
+                          {updateInfo
+                            ? updateInfo.error
+                              ? `Error: ${updateInfo.error}`
+                              : updateInfo.updateReady
+                                ? "Ready to apply"
+                                : updateInfo.updateAvailable
+                                  ? "Update available"
+                                  : "Up to date"
+                            : "—"}
+                        </div>
+                        {updateInfo?.version ? (
+                          <div>
+                            <span className="font-medium text-foreground">
+                              Latest:
+                            </span>{" "}
+                            {updateInfo.version}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -115,7 +224,7 @@ export function SettingsModal({ open, onClose }: Props) {
         </div>
       </div>
     );
-  }, [group, onClose, open, theme]);
+  }, [group, onClose, open, theme, updateBusy, updateInfo]);
 
   if (!open) return null;
   return createPortal(body, document.body);

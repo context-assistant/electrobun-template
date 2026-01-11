@@ -1,0 +1,241 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.4"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2
+
+      # macOS distribution: codesign + notarize, otherwise Gatekeeper will show
+      # “<App> is damaged and can’t be opened” on downloaded builds.
+      #
+      # Provide these repo secrets to enable signing:
+      # - MACOS_CERT_P12_BASE64: base64-encoded .p12 (Developer ID Application)
+      # - MACOS_CERT_PASSWORD: password for the .p12
+      # - ELECTROBUN_DEVELOPER_ID: e.g. "Developer ID Application: Company (TEAMID)"
+      # - ELECTROBUN_APPLEID: Apple ID email
+      # - ELECTROBUN_APPLEIDPASS: App-specific password
+      # - ELECTROBUN_TEAMID: Apple Team ID
+      - name: Import macOS signing certificate
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          MACOS_CERT_P12_BASE64: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${MACOS_CERT_P12_BASE64:-}" ]]; then
+            echo "No MACOS_CERT_P12_BASE64 configured; skipping codesign/notarize setup."
+            exit 0
+          fi
+
+          CERT_PATH="$RUNNER_TEMP/cert.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+
+          echo "$MACOS_CERT_P12_BASE64" | base64 --decode > "$CERT_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          security import "$CERT_PATH" -P "$MACOS_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+
+          # Allow codesign to access the key without UI prompts
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+      - name: Configure Electrobun signing env
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          MACOS_CERT_P12_BASE64: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${MACOS_CERT_P12_BASE64:-}" ]]; then
+            echo "ELECTROBUN_CODESIGN=1" >> "$GITHUB_ENV"
+            echo "ELECTROBUN_NOTARIZE=1" >> "$GITHUB_ENV"
+          else
+            echo "ELECTROBUN_CODESIGN=0" >> "$GITHUB_ENV"
+            echo "ELECTROBUN_NOTARIZE=0" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build app (Electrobun)
+        env:
+          # Electrobun Updater expects:
+          #   ${bucketUrl}/${channel}-${os}-${arch}/update.json
+          # GitHub Releases "latest download" base works well here.
+          ELECTROBUN_BUCKET_URL: https://github.com/${{ github.repository }}/releases/latest/download
+          # Electrobun CLI reads these for codesign/notarize.
+          ELECTROBUN_DEVELOPER_ID: ${{ secrets.ELECTROBUN_DEVELOPER_ID }}
+          ELECTROBUN_APPLEID: ${{ secrets.ELECTROBUN_APPLEID }}
+          ELECTROBUN_APPLEIDPASS: ${{ secrets.ELECTROBUN_APPLEIDPASS }}
+          ELECTROBUN_TEAMID: ${{ secrets.ELECTROBUN_TEAMID }}
+        run: bun run build:app
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ runner.os }}-${{ runner.arch }}
+          path: |
+            artifacts/**/*
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          # Keep per-artifact directories so we can safely disambiguate filenames
+          # before uploading to the GitHub Release.
+          merge-multiple: false
+
+      - name: Create/Update GitHub Release + upload updater assets
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const tag = context.ref.replace('refs/tags/', '');
+            
+            // 1) Get or create the release for this tag
+            let release;
+            try {
+              const r = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+              release = r.data;
+              core.info(`Found existing release id=${release.id} for tag ${tag}`);
+            } catch (err) {
+              core.info(`Creating new release for tag ${tag}...`);
+              const r = await github.rest.repos.createRelease({
+                owner,
+                repo,
+                tag_name: tag,
+                name: tag,
+                generate_release_notes: true,
+              });
+              release = r.data;
+            }
+            
+            // Refresh assets list (in case release existed)
+            const assetsResp = await github.rest.repos.listReleaseAssets({
+              owner,
+              repo,
+              release_id: release.id,
+              per_page: 100,
+            });
+            const existingAssets = assetsResp.data;
+            
+            // 2) Collect Electrobun updater assets from downloaded build outputs.
+            // Electrobun writes:
+            //   artifacts/stable-<os>-<arch>/*
+            // Updater expects these to be available at:
+            //   ${bucketUrl}/stable-<os>-<arch>/<filename>
+            // We'll upload GitHub Release assets with names like:
+            //   stable-macos-arm64.update.json
+            //   stable-macos-arm64.<hash>.patch
+            //   stable-macos-arm64.<app>.app.tar.zst
+            const root = path.join(process.env.GITHUB_WORKSPACE, 'release-artifacts');
+            const uploads = [];
+            
+            function walk(dir) {
+              for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
+                const full = path.join(dir, ent.name);
+                if (ent.isDirectory()) walk(full);
+                else uploads.push(full);
+              }
+            }
+            walk(root);
+            
+            const electrobunFiles = uploads
+              .map((fullPath) => {
+                // We accept either of these shapes (download-artifact can vary):
+                // - .../artifacts/stable-<os>-<arch>/<file>
+                // - .../stable-<os>-<arch>/<file>
+                //
+                // Electrobun Updater expects files to be available at:
+                //   ${bucketUrl}/stable-<os>-<arch>/<filename>
+                const rel = path.relative(root, fullPath);
+                const parts = rel.split(path.sep);
+                const stableIdx = parts.findIndex((p) => p.startsWith('stable-'));
+                if (stableIdx === -1) return null;
+                const platform = parts[stableIdx];
+                const base = path.basename(fullPath);
+                return { fullPath, platform, base, assetName: `${platform}.${base}` };
+              })
+              .filter(Boolean);
+            
+            if (electrobunFiles.length === 0) {
+              core.info('No Electrobun artifacts found to upload. Debug listing:');
+              core.info(`root=${root}`);
+              core.info(`files_seen=${uploads.length}`);
+              for (const p of uploads.slice(0, 200)) core.info(`- ${path.relative(root, p)}`);
+              core.setFailed('No Electrobun artifacts found to upload (expected a stable-<os>-<arch>/ folder).');
+              return;
+            }
+            
+            core.info(`Uploading ${electrobunFiles.length} Electrobun assets...`);
+            
+            // 3) Upload each asset with the exact "folder/name" shape the Updater expects.
+            for (const f of electrobunFiles) {
+              const existing = existingAssets.find(a => a.name === f.assetName);
+              if (existing) {
+                core.info(`Deleting existing asset: ${f.assetName}`);
+                await github.rest.repos.deleteReleaseAsset({
+                  owner,
+                  repo,
+                  asset_id: existing.id,
+                });
+              }
+            
+              const data = fs.readFileSync(f.fullPath);
+              core.info(`Uploading: ${f.assetName} (${data.length} bytes)`);
+            
+              await github.rest.repos.uploadReleaseAsset({
+                owner,
+                repo,
+                release_id: release.id,
+                name: f.assetName,
+                data,
+              });
+            }
+

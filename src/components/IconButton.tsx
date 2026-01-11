@@ -21,7 +21,7 @@ export function IconButton({
       className={[
         "inline-flex h-8 w-8 items-center justify-center rounded-sm border-none text-sm",
         "bg-background hover:bg-muted",
-        active ? "" : "opacity-50",
+        active ? "opacity-60" : "opacity-30",
         className ?? "",
       ].join(" ")}
       {...props}
