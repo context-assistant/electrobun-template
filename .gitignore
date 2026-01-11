@@ -2,6 +2,9 @@
 node_modules
 
 # output
+.tmp-*
+artifacts
+build
 out
 dist
 *.tgz

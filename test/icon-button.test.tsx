@@ -28,8 +28,8 @@ describe("IconButton", () => {
         <span />
       </IconButton>,
     );
-    expect(getByRole("button", { name: "Example" }).className).not.toContain(
-      "opacity-50",
+    expect(getByRole("button", { name: "Example" }).className).toContain(
+      "opacity-60",
     );
 
     rerender(
@@ -38,9 +38,7 @@ describe("IconButton", () => {
       </IconButton>,
     );
     expect(getByRole("button", { name: "Example" }).className).toContain(
-      "opacity-50",
+      "opacity-30",
     );
   });
 });
-
-

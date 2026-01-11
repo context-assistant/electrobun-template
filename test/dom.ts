@@ -45,5 +45,3 @@ g.ResizeObserver ??= class ResizeObserver {
   unobserve() {}
   disconnect() {}
 };
-
-

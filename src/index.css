@@ -10,6 +10,31 @@
   }
 }
 
+/* Electrobun custom titlebar drag region: never allow text selection while dragging */
+.electrobun-webkit-app-region-drag,
+.electrobun-webkit-app-region-drag * {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Resize-dragging: temporarily disable selection everywhere */
+.electrobun-no-select,
+.electrobun-no-select * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+/* Make Lucide SVGs render as crisply as possible when scaled */
+svg.lucide {
+  shape-rendering: geometricPrecision;
+}
+
+/* WebKit/WKWebView can render Lucide strokes a bit heavier than Chromium.
+   Tune titlebar icon weight to better match Chrome. */
+.titlebar-controls svg.lucide {
+  stroke-width: 1.25;
+}
+
 .separator-vertical {
   position: relative;
 }
@@ -34,6 +59,14 @@
   top: -5px;
   height: 10px;
   background-color: red;
+}
+
+.lightbox-container {
+  background-color: rgba(0,0,0,0.4);
+}
+
+.dark .lightbox-container {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 @media (prefers-reduced-motion) {

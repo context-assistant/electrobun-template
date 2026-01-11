@@ -148,9 +148,17 @@ export function AppLayout() {
     | { kind: "bottom"; startY: number; startHeight: number }
   >(null);
 
+  const setGlobalNoSelect = (enabled: boolean) => {
+    const root = document.documentElement;
+    if (enabled) root.classList.add("electrobun-no-select");
+    else root.classList.remove("electrobun-no-select");
+  };
+
   const onLeftHandlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
+    e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
+    setGlobalNoSelect(true);
     dragRef.current = {
       kind: "left",
       startX: e.clientX,
@@ -160,7 +168,9 @@ export function AppLayout() {
 
   const onRightHandlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
+    e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
+    setGlobalNoSelect(true);
     dragRef.current = {
       kind: "right",
       startX: e.clientX,
@@ -170,7 +180,9 @@ export function AppLayout() {
 
   const onBottomHandlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
+    e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
+    setGlobalNoSelect(true);
     dragRef.current = {
       kind: "bottom",
       startY: e.clientY,
@@ -209,16 +221,34 @@ export function AppLayout() {
 
   const onHandlePointerUp = () => {
     dragRef.current = null;
+    setGlobalNoSelect(false);
+  };
+
+  const onHandlePointerCancel = () => {
+    dragRef.current = null;
+    setGlobalNoSelect(false);
+  };
+
+  const onTitlebarMouseDownCapture = (e: React.MouseEvent<HTMLElement>) => {
+    // Prevent "selection rectangle"/text highlighting when click-dragging the titlebar.
+    // Keep interactive controls (buttons) working normally.
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+    if (target.closest("button,a,input,textarea,select,[role='button']")) return;
+    e.preventDefault();
   };
 
   return (
     <div className="h-screen w-screen flex flex-col bg-background text-foreground">
       {/* Top nav (40px) */}
-      <header className="h-10 shrink-0 border-b px-3 flex items-center">
-        <div className="text-sm font-semibold">Context Assistant</div>
-        <div className="flex-1" />
+      <header
+        className="h-10 shrink-0 border-b px-3 flex items-center electrobun-webkit-app-region-drag select-none"
+        onMouseDownCapture={onTitlebarMouseDownCapture}
+      >
+        <div className="flex-1 pointer-events-none" />
 
-        <div className="flex items-center">
+        <div className="flex items-center pointer-events-auto titlebar-controls">
           <IconButton
             label={layout.showLeft ? "Hide left frame" : "Show left frame"}
             active={layout.showLeft}
@@ -226,7 +256,7 @@ export function AppLayout() {
               setLayout((prev) => ({ ...prev, showLeft: !prev.showLeft }))
             }
           >
-            <PanelLeft className="h-4 w-4" />
+            <PanelLeft className="h-5 w-5" />
           </IconButton>
 
           <IconButton
@@ -238,7 +268,7 @@ export function AppLayout() {
               setLayout((prev) => ({ ...prev, showBottom: !prev.showBottom }))
             }
           >
-            <PanelBottom className="h-4 w-4" />
+            <PanelBottom className="h-5 w-5" />
           </IconButton>
 
           <button
@@ -259,8 +289,8 @@ export function AppLayout() {
             <img src={logoUrl} alt="Toggle right frame" className="h-4 w-4" />
           </button>
 
-          <IconButton label="Settings" onClick={() => setSettingsOpen(true)}>
-            <Settings className="h-4 w-4" />
+          <IconButton label="Settings" active onClick={() => setSettingsOpen(true)}>
+            <Settings className="h-5 w-5" />
           </IconButton>
         </div>
       </header>
@@ -299,6 +329,7 @@ export function AppLayout() {
             onPointerDown={onLeftHandlePointerDown}
             onPointerMove={onHandlePointerMove}
             onPointerUp={onHandlePointerUp}
+            onPointerCancel={onHandlePointerCancel}
           />
         )}
 
@@ -317,6 +348,7 @@ export function AppLayout() {
               onPointerDown={onBottomHandlePointerDown}
               onPointerMove={onHandlePointerMove}
               onPointerUp={onHandlePointerUp}
+              onPointerCancel={onHandlePointerCancel}
             />
           )}
 
@@ -353,6 +385,7 @@ export function AppLayout() {
             onPointerDown={onRightHandlePointerDown}
             onPointerMove={onHandlePointerMove}
             onPointerUp={onHandlePointerUp}
+            onPointerCancel={onHandlePointerCancel}
           />
         )}
 
@@ -395,11 +428,13 @@ function ResizeHandle({
   onPointerDown,
   onPointerMove,
   onPointerUp,
+  onPointerCancel,
 }: {
   orientation: "vertical" | "horizontal";
   onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => void;
   onPointerMove: (e: React.PointerEvent<HTMLDivElement>) => void;
   onPointerUp: (e: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerCancel: (e: React.PointerEvent<HTMLDivElement>) => void;
 }) {
   return (
     <div
@@ -416,6 +451,8 @@ function ResizeHandle({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onLostPointerCapture={onPointerCancel}
     />
   );
 }
