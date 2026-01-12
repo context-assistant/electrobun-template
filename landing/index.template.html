@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Context Assistant — a fast, native desktop app for capturing and using project context."
+    />
+    <meta name="color-scheme" content="dark" />
+    <title>Context Assistant</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-owner="__GH_OWNER__" data-repo="__GH_REPO__">
+    <div class="bg">
+      <div class="noise" aria-hidden="true"></div>
+      <div class="glow glow-a" aria-hidden="true"></div>
+      <div class="glow glow-b" aria-hidden="true"></div>
+    </div>
+
+    <header class="header">
+      <a class="brand" href="./">
+        <img class="logo" src="./assets/logo.svg" alt="Context Assistant logo" />
+        <span class="brand-text">Context Assistant</span>
+      </a>
+      <nav class="nav">
+        <a class="nav-link" href="#downloads">Downloads</a>
+        <a class="nav-link" href="#about">About</a>
+        <a class="nav-link" data-repo-link href="__REPO_URL__" rel="noreferrer"
+          >GitHub</a
+        >
+      </nav>
+    </header>
+
+    <main class="main">
+      <section class="hero">
+        <div class="hero-left">
+          <p class="pill">Desktop app • Fast • Offline-friendly</p>
+          <h1 class="h1">A better way to capture project context.</h1>
+          <p class="sub">
+            Context Assistant helps you package the right files, prompts, and
+            metadata into a clean “context bundle” you can share or feed to your
+            tools.
+          </p>
+
+          <div class="cta-row" id="downloads">
+            <a class="btn btn-primary" data-dl="mac" href="__RELEASES_URL__">
+              <span class="btn-title">Download for macOS</span>
+              <span class="btn-sub" data-dl-sub="mac">Loading latest…</span>
+            </a>
+            <a class="btn" data-dl="windows" href="__RELEASES_URL__">
+              <span class="btn-title">Download for Windows</span>
+              <span class="btn-sub" data-dl-sub="windows">Loading latest…</span>
+            </a>
+            <a class="btn" data-dl="linux" href="__RELEASES_URL__">
+              <span class="btn-title">Download for Linux</span>
+              <span class="btn-sub" data-dl-sub="linux">Loading latest…</span>
+            </a>
+          </div>
+
+          <div class="meta-row">
+            <a class="link" data-releases-link href="__RELEASES_URL__"
+              >View all releases</a
+            >
+            <span class="dot" aria-hidden="true">•</span>
+            <a class="link" data-repo-link href="__REPO_URL__">View source</a>
+          </div>
+        </div>
+
+        <div class="hero-right" aria-hidden="true">
+          <div class="card">
+            <div class="card-top">
+              <div class="card-dot red"></div>
+              <div class="card-dot yellow"></div>
+              <div class="card-dot green"></div>
+              <div class="card-title">Context Bundle</div>
+            </div>
+            <pre class="card-code"><code>{
+  "project": "context-assistant",
+  "includes": ["src/", "README.md"],
+  "notes": "What to focus on",
+  "timestamp": "…"
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="about">
+        <h2 class="h2">What you get</h2>
+        <div class="grid">
+          <div class="feature">
+            <h3 class="h3">Quick capture</h3>
+            <p class="p">
+              Collect the right files and context in a repeatable, shareable
+              format.
+            </p>
+          </div>
+          <div class="feature">
+            <h3 class="h3">Native app UX</h3>
+            <p class="p">
+              Runs as a lightweight desktop app, built with Electrobun + Bun.
+            </p>
+          </div>
+          <div class="feature">
+            <h3 class="h3">Releases-ready</h3>
+            <p class="p">
+              Downloads link to GitHub Releases and update assets produced by the
+              existing pipeline.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <div class="footer-inner">
+          <div class="footer-left">
+            <span class="muted">©</span>
+            <span class="muted">Context Assistant</span>
+          </div>
+          <div class="footer-right">
+            <a class="link" data-repo-link href="__REPO_URL__">GitHub</a>
+            <a class="link" data-releases-link href="__RELEASES_URL__">Releases</a>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
+

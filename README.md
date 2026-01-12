@@ -69,6 +69,28 @@ Preview the `dist/` output:
 bun run preview
 ```
 
+### Landing page (GitHub Pages)
+
+This repo also includes a simple **static landing page** (dark theme) in `landing/` that:
+
+- Uses the project logo from `src/design/logo.svg`
+- Links to the GitHub repo + Releases
+- Auto-detects the latest release assets (Mac/Linux/Windows) via the public GitHub Releases API
+
+Build it locally (generates `landing/index.html` and copies the logo into `landing/assets/`):
+
+```bash
+bun run build:landing
+```
+
+Preview it:
+
+```bash
+bun run preview:landing
+```
+
+Deployment is handled by GitHub Actions via `.github/workflows/pages.yml` (GitHub Pages source: **GitHub Actions**).
+
 ### Test
 
 ```bash
