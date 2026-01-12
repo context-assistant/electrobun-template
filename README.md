@@ -76,12 +76,28 @@ This repo also includes a simple **static landing page** (dark theme) in `landin
 - Uses the project logo from `src/design/logo.svg`
 - Links to the GitHub repo + Releases
 - Auto-detects the latest release assets (Mac/Linux/Windows) via the public GitHub Releases API
+- Hosts a limited **web editor** build at `landing/editor/` (served at `/editor/` on GitHub Pages)
 
-Build it locally (generates `landing/index.html` and copies the logo into `landing/assets/`):
+Build it locally:
+
+- Generates `landing/index.html` and copies the logo into `landing/assets/`
+- Builds the web editor into `landing/editor/`
 
 ```bash
 bun run build:landing
 ```
+
+### Web editor (GitHub Pages: `/editor/`)
+
+The renderer UI can also be built to run in a normal browser as a **limited** version of the desktop app.
+
+- **Output**: `landing/editor/` (published by GitHub Pages)
+- **Entrypoint**: `src/index.html` → `src/main.tsx`
+- **Runtime detection**:
+  - `src/electrobun/env.ts`: `isElectrobun()`
+  - `src/lib/runtime.ts`: `runtime.isWeb` / `runtime.isElectrobun`
+- **Desktop-only APIs** (secrets, updater, etc.) should be gated behind `isElectrobun()` / `runtime.isElectrobun`.
+  - The Electrobun RPC bridge (`src/electrobun/renderer.ts`) lazy-loads `electrobun/view` so the web bundle stays browser-safe.
 
 Preview it:
 
@@ -108,7 +124,9 @@ bun run test:watch
 - **`electrobun.config.ts`**: app metadata, build entrypoints, icons, updater `bucketUrl`
 - **`src/bun/index.ts`**: main process (window creation, menu, updater + secrets RPC)
 - **`src/electrobun/rpcSchema.ts`**: typed RPC schema shared by bun + renderer
-- **`src/electrobun/renderer.ts`**: renderer-side RPC bridge + update-info subscription helpers
+- **`src/electrobun/env.ts`**: runtime detection (`isElectrobun()`)
+- **`src/electrobun/renderer.ts`**: renderer-side RPC bridge (lazy-loaded) + update-info subscription helpers
+- **`src/lib/runtime.ts`**: small runtime helper (`runtime.isWeb`, `runtime.isElectrobun`)
 - **`scripts/electrobun-postbuild.ts`**: rebuilds the renderer with `bun-plugin-tailwind` (Tailwind v4) and copies it into the app bundle
 - **`scripts/generate-app-icons.ts`**: generates macOS `icon.iconset`, Linux PNG, Windows `.ico` from `src/design/logo.svg`
 

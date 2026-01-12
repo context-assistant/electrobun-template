@@ -10,7 +10,7 @@ import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 import { App } from "./App";
 import { store } from "./app/store";
-import { getRpc } from "./electrobun/renderer";
+import { initElectrobunRpc } from "./electrobun/renderer";
 
 const elem = document.getElementById("root")!;
 const app = (
@@ -22,7 +22,7 @@ const app = (
 );
 
 // If we're running inside Electrobun, initialize the renderer RPC bridge early.
-getRpc();
+initElectrobunRpc();
 
 if (import.meta.hot) {
   // With hot module reloading, `import.meta.hot.data` is persisted.

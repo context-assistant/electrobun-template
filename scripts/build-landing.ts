@@ -19,6 +19,7 @@ async function main() {
   const projectRoot = process.cwd();
   const landingDir = path.join(projectRoot, "landing");
   const assetsDir = path.join(landingDir, "assets");
+  const editorDir = path.join(landingDir, "editor");
 
   await mkdir(assetsDir, { recursive: true });
 
@@ -29,6 +30,28 @@ async function main() {
 
   // Ensure Pages serves files exactly as-is
   await writeFile(path.join(landingDir, ".nojekyll"), "");
+
+  // Build the web editor into landing/editor
+  // - Use a relative public path so it works for both user pages and project pages.
+  // - Only build src/index.html (the desktop/Electrobun shell is handled by Electrobun's build).
+  await mkdir(editorDir, { recursive: true });
+  const buildCmd = [
+    "bun",
+    "run",
+    path.join(projectRoot, "build.ts"),
+    `--outdir=${editorDir}`,
+    "--public-path=./",
+    `--entrypoints=${path.join(projectRoot, "src", "index.html")}`,
+  ];
+  const proc = Bun.spawnSync(buildCmd, {
+    cwd: projectRoot,
+    stdout: "inherit",
+    stderr: "inherit",
+    env: process.env,
+  });
+  if (proc.exitCode !== 0) {
+    throw new Error(`Web editor build failed (exit code ${proc.exitCode})`);
+  }
 
   const tplPath = path.join(landingDir, "index.template.html");
   const outPath = path.join(landingDir, "index.html");

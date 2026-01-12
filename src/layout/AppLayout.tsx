@@ -4,6 +4,7 @@ import { IconButton } from "../components/IconButton";
 import { SettingsModal } from "../components/SettingsModal";
 import { readJSON, writeJSON } from "../lib/localStorage";
 import { applyTheme, getStoredTheme } from "../lib/theme";
+import { runtime } from "../lib/runtime";
 
 import logoUrl from "../design/logo.svg";
 
@@ -246,7 +247,13 @@ export function AppLayout() {
         className="h-10 shrink-0 border-b px-3 flex items-center electrobun-webkit-app-region-drag select-none"
         onMouseDownCapture={onTitlebarMouseDownCapture}
       >
-        <div className="flex-1 pointer-events-none" />
+        <div className="flex-1 pointer-events-none flex items-center gap-2">
+          {runtime.isWeb ? (
+            <span className="text-xs text-muted-foreground">
+              Web editor (limited)
+            </span>
+          ) : null}
+        </div>
 
         <div className="flex items-center pointer-events-auto titlebar-controls">
           <IconButton

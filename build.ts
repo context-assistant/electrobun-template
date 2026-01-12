@@ -121,9 +121,26 @@ if (existsSync(outdir)) {
 
 const start = performance.now();
 
-const entrypoints = [...new Bun.Glob("**.html").scanSync("src")]
-  .map((a) => path.resolve("src", a))
-  .filter((dir) => !dir.includes("node_modules"));
+function normalizeEntrypoints(
+  entrypoints: unknown,
+): string[] | undefined {
+  if (!entrypoints) return undefined;
+  if (Array.isArray(entrypoints)) return entrypoints.map(String);
+  if (typeof entrypoints === "string") return [entrypoints];
+  return undefined;
+}
+
+const normalizedCliEntrypoints = normalizeEntrypoints(
+  // Bun's BuildConfig allows `entrypoints`, but our CLI parser types it as `any`.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (cliConfig as any).entrypoints,
+);
+
+const entrypoints =
+  normalizedCliEntrypoints ??
+  [...new Bun.Glob("**.html").scanSync("src")]
+    .map((a) => path.resolve("src", a))
+    .filter((dir) => !dir.includes("node_modules"));
 console.log(
   `📄 Found ${entrypoints.length} HTML ${entrypoints.length === 1 ? "file" : "files"} to process\n`,
 );
@@ -138,7 +155,13 @@ const result = await Bun.build({
   define: {
     "process.env.NODE_ENV": JSON.stringify("production"),
   },
-  ...cliConfig,
+  // Avoid accidental override: the CLI parser might treat `--entrypoints=...` as a string.
+  // We normalize entrypoints ourselves above.
+  ...(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { entrypoints: _entrypoints, ...rest } = cliConfig as any;
+    return rest;
+  })(),
 });
 
 const end = performance.now();

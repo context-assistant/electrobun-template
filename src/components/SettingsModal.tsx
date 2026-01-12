@@ -3,13 +3,13 @@ import { createPortal } from "react-dom";
 import { Moon, Sun, SunMoon, X } from "lucide-react";
 import { IconButton } from "./IconButton";
 import {
-  isElectrobun,
   onUpdateInfoChanged,
   updaterApplyUpdate,
   updaterCheckForUpdate,
   updaterDownloadUpdate,
   updaterGetUpdateInfo,
 } from "../electrobun/renderer";
+import { isElectrobun } from "../electrobun/env";
 import {
   applyTheme,
   getStoredTheme,
