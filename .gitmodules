@@ -1,0 +1,6 @@
+[submodule "docker_modules/chatterbox"]
+	path = docker_modules/chatterbox
+	url = git@github.com:context-assistant/chatterbox.git
+[submodule "docker_modules/htdemucs"]
+	path = docker_modules/htdemucs
+	url = git@github.com:context-assistant/htdemucs.git
