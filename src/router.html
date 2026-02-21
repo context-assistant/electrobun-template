@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Routing...</title>
+  </head>
+  <body>
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var requested = params.get("path") || "/";
+        var lower = requested.toLowerCase();
+        var safe =
+          lower === "/user" ||
+          lower.startsWith("/user/") ||
+          lower === "/agent" ||
+          lower.startsWith("/agent/") ||
+          lower === "/head" ||
+          lower.startsWith("/head/") ||
+          lower.startsWith("/__opfs__/p/");
+        if (safe) {
+          try {
+            sessionStorage.setItem("context-assistant.pending-browser-route.v1", requested);
+          } catch {
+            // Ignore session storage failures.
+          }
+        }
+        window.location.replace("/");
+      })();
+    </script>
+  </body>
+</html>

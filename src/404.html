@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Not Found</title>
+  </head>
+  <body>
+    <script>
+      (function () {
+        var route = window.location.pathname + window.location.search + window.location.hash;
+        var lower = window.location.pathname.toLowerCase();
+        var isStaticRoute =
+          lower === "/user" ||
+          lower.startsWith("/user/") ||
+          lower === "/agent" ||
+          lower.startsWith("/agent/") ||
+          lower === "/head" ||
+          lower.startsWith("/head/") ||
+          lower.startsWith("/__opfs__/p/");
+        var target = isStaticRoute ? "/router?path=" + encodeURIComponent(route) : "/";
+        window.location.replace(target);
+      })();
+    </script>
+  </body>
+</html>

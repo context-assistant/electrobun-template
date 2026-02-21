@@ -32,6 +32,7 @@ const config: ElectrobunConfig = {
     linux: {
       // Used when creating AppImage artifacts
       appImageIcon: "assets/icons/icon-512.png",
+      bundleCEF: true,
     } as any,
 
     bun: {

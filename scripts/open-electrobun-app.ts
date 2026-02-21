@@ -30,6 +30,29 @@ if (osName === "macos") {
   process.exit(p.exitCode ?? 0);
 }
 
+if (osName === "linux") {
+  const appDir = join(buildFolder, appFileName);
+  const launcherPath = join(appDir, "bin", "launcher");
+  const p = Bun.spawn([launcherPath], {
+    cwd: appDir,
+    stdio: ["inherit", "inherit", "inherit"],
+  });
+  // Don't wait for the app to exit (same as macOS "open -n" behavior).
+  p.unref();
+  process.exit(0);
+}
+
+if (osName === "win") {
+  const appDir = join(buildFolder, appFileName);
+  const launcherPath = join(appDir, "bin", "Context Assistant.exe");
+  const p = Bun.spawn([launcherPath], {
+    cwd: appDir,
+    stdio: ["inherit", "inherit", "inherit"],
+  });
+  p.unref();
+  process.exit(0);
+}
+
 // Fallback: just tell the user where the build output is.
 console.log(`Built app at: ${buildFolder}`);
 console.log(

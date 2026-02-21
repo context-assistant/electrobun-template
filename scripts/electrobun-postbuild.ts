@@ -1,6 +1,13 @@
 #!/usr/bin/env bun
 import plugin from "bun-plugin-tailwind";
-import { existsSync, mkdirSync, readdirSync, rmSync, statSync } from "fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  rmSync,
+  statSync,
+} from "fs";
 import { join } from "path";
 
 function findResourcesAppFolder(root: string): string {
@@ -80,14 +87,22 @@ if (!result.success) {
 rmSync(viewOutDir, { recursive: true, force: true });
 mkdirSync(viewOutDir, { recursive: true });
 
-// Bun doesn't expose a single "copy dir" helper; `Bun.write` can copy files but
-// we need a recursive copy. We'll just use `cp -R` via Bun.spawnSync for speed.
-// (This script is only executed on the build host.)
-const cp = Bun.spawnSync(["cp", "-R", tmpOutDir + "/", viewOutDir + "/"]);
-if (cp.exitCode !== 0) {
-  console.error("Failed to copy renderer output into app bundle.", cp.stderr);
-  process.exit(cp.exitCode ?? 1);
+// Recursively copy tmpOutDir contents into viewOutDir. Using explicit copy
+// instead of `cp -R` to avoid platform differences (e.g. Linux creating nested
+// .tmp-electrobun-renderer instead of copying contents).
+function copyDirContentsSync(src: string, dest: string): void {
+  mkdirSync(dest, { recursive: true });
+  for (const name of readdirSync(src)) {
+    const srcPath = join(src, name);
+    const destPath = join(dest, name);
+    if (statSync(srcPath).isDirectory()) {
+      copyDirContentsSync(srcPath, destPath);
+    } else {
+      copyFileSync(srcPath, destPath);
+    }
+  }
 }
+copyDirContentsSync(tmpOutDir, viewOutDir);
 
 console.log(`✅ Electrobun postBuild: wrote renderer to ${viewOutDir}`);
 

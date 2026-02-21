@@ -1,0 +1,11 @@
+services:
+  admin:
+    image: context-assistant/docker-devcontainer:29
+    build:
+      context: .
+      dockerfile: ./admin.Dockerfile
+  node-devcontainer:
+    image: context-assistant/node-devcontainer:25
+    build:
+      context: .
+      dockerfile: ./node.Dockerfile

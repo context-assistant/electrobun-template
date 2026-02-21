@@ -1,11 +1,14 @@
 # dependencies (bun install)
 node_modules
+__pyecache))/*
 
 # output
 .tmp-*
+.dev-server-out
 artifacts
 build
 out
+certs
 dist
 *.tgz
 
@@ -35,3 +38,4 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Finder (MacOS) folder config
 .DS_Store
+tmp

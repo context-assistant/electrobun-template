@@ -19,9 +19,10 @@ export function IconButton({
       aria-label={label}
       title={label}
       className={[
-        "inline-flex h-8 w-8 items-center justify-center rounded-sm border-none text-sm",
-        "bg-background hover:bg-muted",
-        active ? "opacity-60" : "opacity-30",
+        "inline-flex h-[12px] w-[12px] items-center justify-center rounded-sm border-none text-sm",
+        "bg-background text-foreground hover:bg-muted",
+        "cursor-pointer",
+        active ? "opacity-50" : "opacity-20",
         className ?? "",
       ].join(" ")}
       {...props}
